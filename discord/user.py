@@ -164,8 +164,15 @@ class BaseUser(_UserTag):
         If the user has not uploaded a global avatar, ``None`` is returned.
         If you want the avatar that a user has displayed, consider :attr:`display_avatar`.
         """
+
         if self._avatar is not None:
             return Asset._from_avatar(self._state, self.id, self._avatar)
+        if self._avatar is None:
+            if self.discriminator == '0':
+                avatar_id = (self.id >> 22) % len(DefaultAvatar)
+            else:
+                avatar_id = int(self.discriminator) % 5
+            return Asset._from_default_avatar(self._state, avatar_id)
         return None
 
     @property

@@ -708,17 +708,14 @@ class HTTPClient:
 
                             retry_after: float = data['retry_after']
                             if self.max_ratelimit_timeout and retry_after > self.max_ratelimit_timeout:
-                                _log.warning(
-                                    'We are being rate limited. %s %s responded with 429. Timeout of %.2f was too long, erroring instead.',
-                                    method,
-                                    url,
-                                    retry_after,
-                                )
                                 raise RateLimited(retry_after)
-
-                            fmt = 'We are being rate limited. %s %s responded with 429. Retrying in %.2f seconds.'
-                            _log.warning(fmt, method, url, retry_after)
-
+                            elif method == 'PATCH' and 'channel' in url:
+                                raise RateLimited(retry_after)
+                            elif method == 'POST' and 'emoji' in url:
+                                raise RateLimited(retry_after)
+                            elif retry_after > 1:
+                                fmt = 'We are being rate limited. %s %s responded with 429. Retrying in %.2f seconds.'
+                                _log.warning(fmt, method, url, retry_after)
                             _log.debug(
                                 'Rate limit is being handled by bucket hash %s with %r major parameters',
                                 bucket_hash,

@@ -418,7 +418,7 @@ class MessageConverter(IDConverter[discord.Message]):
         if message:
             return message
         channel = PartialMessageConverter._resolve_channel(ctx, guild_id, channel_id)
-        if not channel or not isinstance(channel, discord.abc.Messageable):
+        if not channel or not isinstance(channel, discord.abc.Messageable) or channel.guild != ctx.guild:
             raise ChannelNotFound(channel_id)
         try:
             return await channel.fetch_message(message_id)
@@ -458,7 +458,12 @@ class GuildChannelConverter(IDConverter[discord.abc.GuildChannel]):
             # not a mention
             if guild:
                 iterable: Iterable[CT] = getattr(guild, attribute)
-                result: Optional[CT] = discord.utils.get(iterable, name=argument)
+                result: Optional[CT] = discord.utils.get(iterable, name=argument) or discord.utils.find(
+                    lambda channel: (
+                        argument.lower() in channel.name.lower()
+                    ),
+                    iterable,
+                )
             else:
 
                 def check(c):
@@ -1236,7 +1241,7 @@ async def _actual_conversion(ctx: Context[BotT], converter: Any, argument: str, 
             else:
                 return await converter().convert(ctx, argument)
         elif isinstance(converter, Converter):
-            return await converter.convert(ctx, argument)  # type: ignore
+            return await converter.convert(ctx, argument)
     except CommandError:
         raise
     except Exception as exc:
